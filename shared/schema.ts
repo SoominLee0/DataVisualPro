@@ -1,131 +1,120 @@
 import { z } from "zod";
+import { pgTable, text, integer, boolean, timestamp, serial, jsonb } from "drizzle-orm/pg-core";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
-// User Schema
-export const userSchema = z.object({
-  id: z.string(),
-  email: z.string().email(),
-  name: z.string(),
-  avatar: z.string().optional(),
-  currentDay: z.number().default(1),
-  currentStreak: z.number().default(0),
-  longestStreak: z.number().default(0),
-  totalPoints: z.number().default(0),
-  totalChallenges: z.number().default(0),
-  successRate: z.number().default(0),
-  badges: z.array(z.string()).default([]),
-  groupIds: z.array(z.string()).default([]),
-  createdAt: z.date(),
-  lastLoginAt: z.date(),
+// Database Tables
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  name: text("name").notNull(),
+  avatar: text("avatar"),
+  currentDay: integer("current_day").notNull().default(1),
+  currentStreak: integer("current_streak").notNull().default(0),
+  longestStreak: integer("longest_streak").notNull().default(0),
+  totalPoints: integer("total_points").notNull().default(0),
+  totalChallenges: integer("total_challenges").notNull().default(0),
+  successRate: integer("success_rate").notNull().default(0),
+  badges: jsonb("badges").notNull().default("[]"),
+  groupIds: jsonb("group_ids").notNull().default("[]"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  lastLoginAt: timestamp("last_login_at").notNull().defaultNow(),
 });
 
-export const insertUserSchema = userSchema.omit({ 
+export const challenges = pgTable("challenges", {
+  id: serial("id").primaryKey(),
+  day: integer("day").notNull().unique(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  videoUrl: text("video_url").notNull(),
+  duration: text("duration").notNull(),
+  difficulty: integer("difficulty").notNull(),
+  points: integer("points").notNull().default(100),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const submissions = pgTable("submissions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  challengeId: integer("challenge_id").notNull(),
+  challengeDay: integer("challenge_day").notNull(),
+  type: text("type").notNull(),
+  content: text("content").notNull(),
+  isSuccess: boolean("is_success").notNull(),
+  points: integer("points").notNull(),
+  groupId: integer("group_id"),
+  reactions: jsonb("reactions").notNull().default("[]"),
+  comments: jsonb("comments").notNull().default("[]"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const groups = pgTable("groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  ownerId: integer("owner_id").notNull(),
+  memberIds: jsonb("member_ids").notNull().default("[]"),
+  totalPoints: integer("total_points").notNull().default(0),
+  isPublic: boolean("is_public").notNull().default(false),
+  inviteCode: text("invite_code").notNull().unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Zod schemas for type safety
+export const userSchema = createSelectSchema(users);
+export const insertUserSchema = createInsertSchema(users).omit({ 
   id: true, 
   createdAt: true, 
   lastLoginAt: true 
 });
 
-export type User = z.infer<typeof userSchema>;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-
-// Challenge Schema
-export const challengeSchema = z.object({
-  id: z.string(),
-  day: z.number(),
-  title: z.string(),
-  description: z.string(),
-  videoUrl: z.string(),
-  duration: z.string(),
-  difficulty: z.number().min(1).max(3),
-  points: z.number().default(100),
-  isActive: z.boolean().default(true),
-  createdAt: z.date(),
-});
-
-export const insertChallengeSchema = challengeSchema.omit({ 
+export const challengeSchema = createSelectSchema(challenges);
+export const insertChallengeSchema = createInsertSchema(challenges).omit({ 
   id: true, 
   createdAt: true 
 });
 
-export type Challenge = z.infer<typeof challengeSchema>;
-export type InsertChallenge = z.infer<typeof insertChallengeSchema>;
-
-// Submission Schema
-export const submissionSchema = z.object({
-  id: z.string(),
-  userId: z.string(),
-  challengeId: z.string(),
-  challengeDay: z.number(),
-  type: z.enum(['video', 'photo', 'text', 'emoji']),
-  content: z.string(), // URL for media, text for text/emoji
-  isSuccess: z.boolean(),
-  points: z.number(),
-  groupId: z.string().optional(),
-  reactions: z.array(z.object({
-    userId: z.string(),
-    type: z.enum(['heart', 'fire', 'clap'])
-  })).default([]),
-  comments: z.array(z.object({
-    userId: z.string(),
-    content: z.string(),
-    createdAt: z.date()
-  })).default([]),
-  createdAt: z.date(),
-});
-
-export const insertSubmissionSchema = submissionSchema.omit({ 
+export const submissionSchema = createSelectSchema(submissions);
+export const insertSubmissionSchema = createInsertSchema(submissions).omit({ 
   id: true, 
   createdAt: true,
   reactions: true,
   comments: true
 });
 
-export type Submission = z.infer<typeof submissionSchema>;
-export type InsertSubmission = z.infer<typeof insertSubmissionSchema>;
-
-// Group Schema
-export const groupSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  description: z.string().optional(),
-  ownerId: z.string(),
-  memberIds: z.array(z.string()).default([]),
-  totalPoints: z.number().default(0),
-  isPublic: z.boolean().default(false),
-  inviteCode: z.string(),
-  createdAt: z.date(),
-});
-
-export const insertGroupSchema = groupSchema.omit({ 
+export const groupSchema = createSelectSchema(groups);
+export const insertGroupSchema = createInsertSchema(groups).omit({ 
   id: true, 
   createdAt: true,
   inviteCode: true
 });
 
+export type User = z.infer<typeof userSchema>;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Challenge = z.infer<typeof challengeSchema>;
+export type InsertChallenge = z.infer<typeof insertChallengeSchema>;
+export type Submission = z.infer<typeof submissionSchema>;
+export type InsertSubmission = z.infer<typeof insertSubmissionSchema>;
 export type Group = z.infer<typeof groupSchema>;
 export type InsertGroup = z.infer<typeof insertGroupSchema>;
 
-// Weekly Ranking Schema
-export const weeklyRankingSchema = z.object({
-  id: z.string(),
-  userId: z.string(),
-  groupId: z.string(),
-  weekStart: z.date(),
-  weeklyPoints: z.number().default(0),
-  rank: z.number(),
-  completedChallenges: z.number().default(0),
-});
+// Additional types for compatibility
+export type WeeklyRanking = {
+  id: number;
+  userId: number;
+  groupId: number;
+  weekStart: Date;
+  weeklyPoints: number;
+  rank: number;
+  completedChallenges: number;
+};
 
-export type WeeklyRanking = z.infer<typeof weeklyRankingSchema>;
-
-// Activity Feed Schema
-export const activitySchema = z.object({
-  id: z.string(),
-  userId: z.string(),
-  type: z.enum(['challenge_completed', 'streak_milestone', 'badge_earned', 'joined_group']),
-  content: z.string(),
-  relatedId: z.string().optional(), // challengeId, badgeId, etc.
-  groupId: z.string().optional(),
-  createdAt: z.date(),
-});
-
-export type Activity = z.infer<typeof activitySchema>;
+export type Activity = {
+  id: number;
+  userId: number;
+  type: 'challenge_completed' | 'streak_milestone' | 'badge_earned' | 'joined_group';
+  content: string;
+  relatedId?: number;
+  groupId?: number;
+  createdAt: Date;
+};
