@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthDatabase } from '@/hooks/useAuthDatabase';
 
 interface LoginScreenProps {
   onLoginSuccess: () => void;
 }
 
 export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
-  const { loginWithGoogle, loginWithEmail, register, error } = useAuth();
+  const { loginWithEmail, register, error } = useAuthDatabase();
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
@@ -19,18 +19,23 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   });
 
   const handleGoogleLogin = async () => {
-    await loginWithGoogle();
-    onLoginSuccess();
+    // Google login not available in database mode
+    alert('Google 로그인은 현재 지원되지 않습니다. 이메일로 로그인해주세요.');
   };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    let success = false;
+    
     if (isSignUp) {
-      await register(formData.email, formData.password, formData.name);
+      success = await register(formData.email, formData.password, formData.name);
     } else {
-      await loginWithEmail(formData.email, formData.password);
+      success = await loginWithEmail(formData.email, formData.password);
     }
-    onLoginSuccess();
+    
+    if (success) {
+      onLoginSuccess();
+    }
   };
 
   if (showEmailForm) {
