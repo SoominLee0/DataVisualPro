@@ -9,7 +9,7 @@ interface LoginScreenProps {
 }
 
 export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
-  const { loginWithEmail, register, error } = useAuthDatabase();
+  const { loginWithEmail, loginWithGoogle, register, error } = useAuthDatabase();
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
@@ -19,8 +19,8 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   });
 
   const handleGoogleLogin = async () => {
-    // Google login not available in database mode
-    alert('Google 로그인은 현재 지원되지 않습니다. 이메일로 로그인해주세요.');
+    await loginWithGoogle();
+    // Note: Firebase redirect will handle the login flow
   };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
