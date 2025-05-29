@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User, InsertUser } from '@shared/schema';
+import { auth, googleProvider } from '@/lib/firebase';
+import { signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'firebase/auth';
 
 export function useAuthDatabase() {
   const [user, setUser] = useState<User | null>(null);
@@ -7,17 +9,59 @@ export function useAuthDatabase() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check for existing user in localStorage
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
+    // Listen for Firebase auth state changes
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
-        const userData = JSON.parse(savedUser);
-        setUser(userData);
+        if (firebaseUser) {
+          // Get or create user in our database
+          let userData = await fetch(`/api/users/email/${firebaseUser.email}`).then(res => 
+            res.ok ? res.json() : null
+          ).catch(() => null);
+          
+          if (!userData) {
+            // Create new user in our database
+            const newUserData: InsertUser = {
+              email: firebaseUser.email || '',
+              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+              avatar: firebaseUser.photoURL || undefined,
+              currentDay: 1,
+              currentStreak: 0,
+              longestStreak: 0,
+              totalPoints: 0,
+              totalChallenges: 0,
+              successRate: 0,
+              badges: [],
+              groupIds: [],
+            };
+            
+            const response = await fetch('/api/users', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(newUserData),
+            });
+            
+            userData = await response.json();
+          }
+          
+          setUser(userData);
+          localStorage.setItem('user', JSON.stringify(userData));
+        } else {
+          setUser(null);
+          localStorage.removeItem('user');
+        }
       } catch (err) {
-        localStorage.removeItem('user');
+        setError(err instanceof Error ? err.message : 'Authentication error');
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    });
+
+    // Check for redirect result (Google login)
+    getRedirectResult(auth).catch((error) => {
+      setError(error.message);
+    });
+
+    return unsubscribe;
   }, []);
 
   const register = async (email: string, password: string, name: string) => {
@@ -101,9 +145,23 @@ export function useAuthDatabase() {
     }
   };
 
-  const signOut = async () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const loginWithGoogle = async () => {
+    try {
+      setError(null);
+      await signInWithRedirect(auth, googleProvider);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Google login failed');
+    }
+  };
+
+  const signOutUser = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+      localStorage.removeItem('user');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Logout failed');
+    }
   };
 
   return {
@@ -111,7 +169,8 @@ export function useAuthDatabase() {
     loading,
     error,
     loginWithEmail,
+    loginWithGoogle,
     register,
-    signOut,
+    signOut: signOutUser,
   };
 }
