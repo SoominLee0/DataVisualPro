@@ -22,8 +22,8 @@ export function ChallengeSubmissionModal({
   onClose, 
   onSubmitSuccess 
 }: ChallengeSubmissionModalProps) {
-  const { user } = useAuth();
-  const { submitChallenge } = useChallenges();
+  const { user } = useAuthDatabase();
+  const { submitChallenge } = useChallengesDatabase();
   
   const [submissionType, setSubmissionType] = useState<SubmissionType>('video');
   const [isSuccess, setIsSuccess] = useState(true);

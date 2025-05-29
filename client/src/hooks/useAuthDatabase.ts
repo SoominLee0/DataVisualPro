@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { apiRequest } from '@/lib/queryClient';
 import { User, InsertUser } from '@shared/schema';
 
 export function useAuthDatabase() {
@@ -39,11 +38,15 @@ export function useAuthDatabase() {
         groupIds: [],
       };
 
-      const response = await apiRequest('/api/users', {
+      const response = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to register user');
+      }
 
       const newUser = await response.json();
       setUser(newUser);
@@ -62,8 +65,7 @@ export function useAuthDatabase() {
       setError(null);
       setLoading(true);
 
-      // For demo purposes, we'll create a mock login by checking if user exists
-      // In a real app, you'd verify password on the server
+      // For demo purposes, we'll create a user if they don't exist
       const userData: InsertUser = {
         email,
         name: email.split('@')[0],
@@ -77,11 +79,15 @@ export function useAuthDatabase() {
         groupIds: [],
       };
 
-      const response = await apiRequest('/api/users', {
+      const response = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to login');
+      }
 
       const newUser = await response.json();
       setUser(newUser);
@@ -100,24 +106,6 @@ export function useAuthDatabase() {
     localStorage.removeItem('user');
   };
 
-  const updateUser = async (updates: Partial<User>) => {
-    if (!user) return;
-    
-    try {
-      await apiRequest(`/api/users/${user.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-
-      const updatedUser = { ...user, ...updates };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update user');
-    }
-  };
-
   return {
     user,
     loading,
@@ -125,6 +113,5 @@ export function useAuthDatabase() {
     loginWithEmail,
     register,
     signOut,
-    updateUser,
   };
 }

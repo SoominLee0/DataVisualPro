@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { apiRequest } from '@/lib/queryClient';
 import { Challenge, Submission, InsertSubmission } from '@shared/schema';
 
 export function useChallengesDatabase() {
@@ -14,7 +13,7 @@ export function useChallengesDatabase() {
   const loadChallenges = async () => {
     try {
       setLoading(true);
-      const response = await apiRequest('/api/challenges');
+      const response = await fetch('/api/challenges');
       const challengesData = await response.json();
       setChallenges(challengesData);
     } catch (err) {
@@ -26,7 +25,7 @@ export function useChallengesDatabase() {
 
   const getChallengeByDay = async (day: number): Promise<Challenge | null> => {
     try {
-      const response = await apiRequest(`/api/challenges/day/${day}`);
+      const response = await fetch(`/api/challenges/day/${day}`);
       if (response.ok) {
         return await response.json();
       }
@@ -39,7 +38,7 @@ export function useChallengesDatabase() {
 
   const getUserSubmissions = async (userId: number): Promise<Submission[]> => {
     try {
-      const response = await apiRequest(`/api/users/${userId}/submissions`);
+      const response = await fetch(`/api/users/${userId}/submissions`);
       return await response.json();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to get submissions');
@@ -61,7 +60,6 @@ export function useChallengesDatabase() {
       
       if (content instanceof File) {
         // For MVP, we'll store file as base64 string
-        // In production, you'd upload to cloud storage
         const base64 = await new Promise<string>((resolve) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
@@ -81,7 +79,7 @@ export function useChallengesDatabase() {
         groupId,
       };
 
-      const response = await apiRequest('/api/submissions', {
+      const response = await fetch('/api/submissions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submission),
@@ -97,7 +95,7 @@ export function useChallengesDatabase() {
 
   const getGroupSubmissions = async (groupId: number): Promise<Submission[]> => {
     try {
-      const response = await apiRequest(`/api/groups/${groupId}/submissions`);
+      const response = await fetch(`/api/groups/${groupId}/submissions`);
       return await response.json();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to get group submissions');
