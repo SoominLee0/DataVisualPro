@@ -5,11 +5,11 @@ import { HomeTab } from '@/components/HomeTab';
 import { ChallengeSubmissionModal } from '@/components/ChallengeSubmissionModal';
 import { GroupTab } from '@/components/GroupTab';
 import { ProfileTab } from '@/components/ProfileTab';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthDatabase } from '@/hooks/useAuthDatabase';
 import { Challenge } from '@shared/schema';
 
 export default function Home() {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuthDatabase();
   const [activeTab, setActiveTab] = useState('home');
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
   const [showSubmissionModal, setShowSubmissionModal] = useState(false);

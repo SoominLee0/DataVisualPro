@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Challenge } from '@shared/schema';
-import { useChallenges } from '@/hooks/useChallenges';
-import { useAuth } from '@/hooks/useAuth';
+import { useChallengesDatabase } from '@/hooks/useChallengesDatabase';
+import { useAuthDatabase } from '@/hooks/useAuthDatabase';
 import { cn } from '@/lib/utils';
 
 interface ChallengeSubmissionModalProps {

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useAuth } from '@/hooks/useAuth';
-import { useChallenges } from '@/hooks/useChallenges';
+import { useAuthDatabase } from '@/hooks/useAuthDatabase';
+import { useChallengesDatabase } from '@/hooks/useChallengesDatabase';
 import { Challenge } from '@shared/schema';
 
 interface HomeTabProps {
@@ -10,8 +10,8 @@ interface HomeTabProps {
 }
 
 export function HomeTab({ onStartChallenge }: HomeTabProps) {
-  const { user } = useAuth();
-  const { getChallengeByDay, getUserSubmissions } = useChallenges();
+  const { user } = useAuthDatabase();
+  const { getChallengeByDay, getUserSubmissions } = useChallengesDatabase();
   const [todayChallenge, setTodayChallenge] = useState<Challenge | null>(null);
   const [hasSubmittedToday, setHasSubmittedToday] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -43,7 +43,7 @@ export function HomeTab({ onStartChallenge }: HomeTabProps) {
     try {
       const submissions = await getUserSubmissions(user.id);
       const today = new Date().toDateString();
-      const todaySubmission = submissions.find(sub => 
+      const todaySubmission = submissions.find((sub: any) => 
         new Date(sub.createdAt).toDateString() === today
       );
       setHasSubmittedToday(!!todaySubmission);
